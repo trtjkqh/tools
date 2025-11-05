@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>产品成本分析器 | Cost Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-2xl font-bold mb-4">📊 产品成本分析器</h1>
+
+  <div class="flex gap-2 mb-4">
+    <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden" />
+    <button onclick="document.getElementById('excelFile').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">导入 Excel</button>
+    <button onclick="exportExcel()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">导出 Excel</button>
+    <button onclick="addRow()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">添加项目</button>
+    <button onclick="clearData()" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded">清空数据</button>
+  </div>
+
+  <div class="overflow-x-auto w-full max-w-5xl">
+    <table id="costTable" class="min-w-full bg-white border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border px-2 py-1">类别</th>
+          <th class="border px-2 py-1">项目名称</th>
+          <th class="border px-2 py-1">数量</th>
+          <th class="border px-2 py-1">单价</th>
+          <th class="border px-2 py-1">小计</th>
+          <th class="border px-2 py-1">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="w-full max-w-5xl mt-4 flex justify-between items-center">
+    <h2 class="text-lg font-semibold">总成本：<span id="totalCost" class="text-red-600 font-bold">￥0.00</span></h2>
+  </div>
+
+  <div class="w-full max-w-3xl mt-6">
+    <canvas id="costChart"></canvas>
+  </div>
+
+  <script>
+    let tableData = JSON.parse(localStorage.getItem('costData')) || [];
+    const tableBody = document.getElementById('tableBody');
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      tableData.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="border p-1"><input value="${row.category}" onchange="updateCell(${index}, 'category', this.value)" class="w-full border-none"/></td>
+          <td class="border p-1"><input value="${row.name}" onchange="updateCell(${index}, 'name', this.value)" class="w-full border-none"/></td>
+          <td class="border p-1"><input type="number" value="${row.qty}" onchange="updateCell(${index}, 'qty', parseFloat(this.value)||0)" class="w-full border-none text-right"/></td>
+          <td class="border p-1"><input type="number" value="${row.price}" onchange="updateCell(${index}, 'price', parseFloat(this.value)||0)" class="w-full border-none text-right"/></td>
+          <td class="border p-1 text-right">${(row.qty * row.price).toFixed(2)}</td>
+          <td class="border p-1 text-center">
+            <button onclick="deleteRow(${index})" class="text-red-500 hover:text-red-700">删除</button>
+          </td>`;
+        tableBody.appendChild(tr);
+      });
+      updateTotals();
+    }
+
+    function addRow() {
+      tableData.push({ category: '', name: '', qty: 0, price: 0 });
+      renderTable();
+      saveData();
+    }
+
+    function deleteRow(i) {
+      tableData.splice(i, 1);
+      renderTable();
+      saveData();
+    }
+
+    function updateCell(index, key, value) {
+      tableData[index][key] = value;
+      renderTable();
+      saveData();
+    }
+
+    function updateTotals() {
+      const total = tableData.reduce((sum, r) => sum + r.qty * r.price, 0);
+      document.getElementById('totalCost').textContent = '￥' + total.toFixed(2);
+      renderChart();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('costChart').getContext('2d');
+      const grouped = {};
+      tableData.forEach(r => {
+        const key = r.category || '未分类';
+        grouped[key] = (grouped[key] || 0) + r.qty * r.price;
+      });
+
+      if (window.costChart) window.costChart.destroy();
+      window.costChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(grouped),
+          datasets: [{
+            data: Object.values(grouped),
+            backgroundColor: ['#60a5fa','#34d399','#fbbf24','#f87171','#a78bfa']
+          }]
+        },
+        options: { plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    function exportExcel() {
+      const ws = XLSX.utils.json_to_sheet(tableData.map(r => ({
+        类别: r.category, 项目: r.name, 数量: r.qty, 单价: r.price, 小计: r.qty * r.price
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "成本明细");
+      XLSX.writeFile(wb, "产品成本明细.xlsx");
+    }
+
+    document.getElementById('excelFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+        tableData = rows.map(r => ({
+          category: r['类别'] || '',
+          name: r['项目'] || '',
+          qty: parseFloat(r['数量']) || 0,
+          price: parseFloat(r['单价']) || 0
+        }));
+        renderTable();
+        saveData();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function saveData() {
+      localStorage.setItem('costData', JSON.stringify(tableData));
+    }
+
+    function clearData() {
+      if (confirm('确定清空所有数据吗？')) {
+        tableData = [];
+        renderTable();
+        saveData();
+      }
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
