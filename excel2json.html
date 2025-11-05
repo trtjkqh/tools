@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Excel 转 JSON 工具</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center p-6">
+  <h1 class="text-2xl font-bold mb-4 text-gray-800">📊 Excel 转 JSON 工具</h1>
+
+  <div class="bg-white shadow-lg rounded-xl p-6 w-full max-w-2xl">
+    <input type="file" id="fileInput" accept=".xlsx, .xls" class="mb-4 block w-full text-sm text-gray-700">
+    <div id="sheetContainer" class="hidden mb-4">
+      <label for="sheetSelect" class="block mb-2 text-gray-700">选择工作表：</label>
+      <select id="sheetSelect" class="border rounded p-2 w-full"></select>
+    </div>
+    <div id="preview" class="text-sm text-gray-700 bg-gray-50 rounded p-3 overflow-auto max-h-64"></div>
+    <button id="downloadBtn" class="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 hidden">导出 JSON</button>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById('fileInput');
+    const sheetSelect = document.getElementById('sheetSelect');
+    const sheetContainer = document.getElementById('sheetContainer');
+    const preview = document.getElementById('preview');
+    const downloadBtn = document.getElementById('downloadBtn');
+    let workbookData = {};
+
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      workbookData = {};
+
+      sheetSelect.innerHTML = '';
+      workbook.SheetNames.forEach(name => {
+        const json = XLSX.utils.sheet_to_json(workbook.Sheets[name]);
+        workbookData[name] = json;
+        const option = document.createElement('option');
+        option.value = name;
+        option.textContent = `${name} (${json.length} 行)`;
+        sheetSelect.appendChild(option);
+      });
+
+      sheetContainer.classList.remove('hidden');
+      previewData(sheetSelect.value);
+      downloadBtn.classList.remove('hidden');
+    });
+
+    sheetSelect.addEventListener('change', () => previewData(sheetSelect.value));
+
+    function previewData(sheetName) {
+      const data = workbookData[sheetName] || [];
+      preview.innerHTML = data.length
+        ? `<pre>${JSON.stringify(data.slice(0, 10), null, 2)}${data.length > 10 ? "\n...（仅显示前10行）" : ""}</pre>`
+        : '<p class="text-gray-500">空工作表</p>';
+    }
+
+    downloadBtn.addEventListener('click', () => {
+      const sheetName = sheetSelect.value;
+      const data = workbookData[sheetName];
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${sheetName}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
