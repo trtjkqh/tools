@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>包装报价模板</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-gray-50 p-4">
+  <h1 class="text-2xl font-bold text-center mb-6">包装报价模板</h1>
+
+  <!-- 公司抬头 -->
+  <div class="grid grid-cols-2 gap-4 mb-6">
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="font-semibold mb-2">需方信息</h2>
+      <input type="text" placeholder="公司名称" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="联系人" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="电话" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="地址" class="w-full mb-2 border p-1 rounded">
+    </div>
+    <div class="bg-white p-4 rounded shadow">
+      <h2 class="font-semibold mb-2">供方信息</h2>
+      <input type="text" placeholder="公司名称" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="联系人" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="电话" class="w-full mb-2 border p-1 rounded">
+      <input type="text" placeholder="地址" class="w-full mb-2 border p-1 rounded">
+    </div>
+  </div>
+
+  <!-- 产品表格 -->
+  <div class="overflow-x-auto mb-6">
+    <table class="table-auto border-collapse border border-gray-300 w-full bg-white">
+      <thead>
+        <tr class="bg-gray-100">
+          <th class="border px-2 py-1">产品名</th>
+          <th class="border px-2 py-1">图片URL</th>
+          <th class="border px-2 py-1">规格</th>
+          <th class="border px-2 py-1">工艺</th>
+          <th class="border px-2 py-1">阶梯数量</th>
+          <th class="border px-2 py-1">阶梯单价</th>
+          <th class="border px-2 py-1">操作</th>
+        </tr>
+      </thead>
+      <tbody id="productTable">
+        <!-- 动态添加产品行 -->
+      </tbody>
+    </table>
+  </div>
+  <button class="bg-green-500 text-white px-4 py-2 rounded mb-6" onclick="addRow()">添加产品</button>
+
+  <!-- 报价要求 -->
+  <div class="bg-white p-4 rounded shadow mb-6">
+    <h2 class="font-semibold mb-2">报价要求</h2>
+    <textarea id="notes" rows="5" class="w-full border p-2 rounded" placeholder="如：含税含运，送货地址，发货要求，箱规，要附发货单和厂检报告"></textarea>
+  </div>
+
+  <!-- 导出按钮 -->
+  <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="exportExcel()">导出 Excel</button>
+
+<script>
+const tableBody = document.getElementById("productTable");
+
+// 添加一行产品
+function addRow() {
+  const row = document.createElement("tr");
+  row.innerHTML = `
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="产品名"></td>
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="图片URL"></td>
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="规格"></td>
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="工艺"></td>
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="阶梯数量"></td>
+    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="阶梯单价"></td>
+    <td class="border px-2 py-1 text-center"><button class="bg-red-500 text-white px-2 py-1 rounded" onclick="removeRow(this)">删除</button></td>
+  `;
+  tableBody.appendChild(row);
+}
+
+// 删除行
+function removeRow(btn) {
+  btn.closest("tr").remove();
+}
+
+// 导出 Excel
+function exportExcel() {
+  const wb = XLSX.utils.book_new();
+  const ws_data = [];
+
+  // 需方 & 供方信息
+  ws_data.push(["需方公司","需方联系人","需方电话","需方地址","供方公司","供方联系人","供方电话","供方地址"]);
+  const buyerInputs = document.querySelectorAll("div:first-child input");
+  const supplierInputs = document.querySelectorAll("div:nth-child(2) input");
+  ws_data.push([...Array.from(buyerInputs).map(i=>i.value), ...Array.from(supplierInputs).map(i=>i.value)]);
+  ws_data.push([]);
+
+  // 表格标题
+  ws_data.push(["产品名","图片URL","规格","工艺","阶梯数量","阶梯单价"]);
+
+  // 表格数据
+  document.querySelectorAll("#productTable tr").forEach(tr=>{
+    const row = [];
+    tr.querySelectorAll("input").forEach(input=>{
+      row.push(input.value);
+    });
+    ws_data.push(row);
+  });
+  ws_data.push([]);
+
+  // 报价要求
+  ws_data.push(["报价要求"]);
+  ws_data.push([document.getElementById("notes").value]);
+
+  const ws = XLSX.utils.aoa_to_sheet(ws_data);
+  XLSX.utils.book_append_sheet(wb, ws, "报价单");
+  XLSX.writeFile(wb, "包装报价单.xlsx");
+}
+</script>
+</body>
+</html>
