@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BOM层级成本分析器 | Cost Tree Analyzer</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <style>
+    textarea { font-family: monospace; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-2xl font-bold mb-4">📦 产品BOM层级成本分析器</h1>
+
+  <div class="flex gap-2 mb-4">
+    <input type="file" id="excelFile" accept=".xlsx, .xls" class="hidden" />
+    <button onclick="document.getElementById('excelFile').click()" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded">导入 Excel</button>
+    <button onclick="exportExcel()" class="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded">导出 Excel</button>
+    <button onclick="addRow()" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded">添加项目</button>
+    <button onclick="clearData()" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-1 rounded">清空数据</button>
+  </div>
+
+  <div class="overflow-x-auto w-full max-w-6xl">
+    <table id="costTable" class="min-w-full bg-white border border-gray-300 text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="border px-2 py-1">上级项目</th>
+          <th class="border px-2 py-1">类别</th>
+          <th class="border px-2 py-1">项目名称</th>
+          <th class="border px-2 py-1">数量</th>
+          <th class="border px-2 py-1">单价</th>
+          <th class="border px-2 py-1">小计</th>
+          <th class="border px-2 py-1">操作</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <div class="w-full max-w-6xl mt-4 flex justify-between items-center">
+    <h2 class="text-lg font-semibold">总成本：<span id="totalCost" class="text-red-600 font-bold">￥0.00</span></h2>
+  </div>
+
+  <div class="w-full max-w-6xl grid grid-cols-2 gap-6 mt-6">
+    <div>
+      <h3 class="text-md font-semibold mb-2">📊 成本占比</h3>
+      <canvas id="costChart"></canvas>
+    </div>
+    <div>
+      <h3 class="text-md font-semibold mb-2">🧩 层级结构</h3>
+      <div id="mermaidContainer" class="bg-white border rounded-lg p-2 overflow-x-auto"></div>
+    </div>
+  </div>
+
+  <script>
+    mermaid.initialize({ startOnLoad: false });
+    let tableData = JSON.parse(localStorage.getItem('bomCostData')) || [];
+    const tableBody = document.getElementById('tableBody');
+
+    function renderTable() {
+      tableBody.innerHTML = '';
+      tableData.forEach((row, index) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="border p-1"><input value="${row.parent}" onchange="updateCell(${index}, 'parent', this.value)" class="w-full border-none"/></td>
+          <td class="border p-1"><input value="${row.category}" onchange="updateCell(${index}, 'category', this.value)" class="w-full border-none"/></td>
+          <td class="border p-1"><input value="${row.name}" onchange="updateCell(${index}, 'name', this.value)" class="w-full border-none"/></td>
+          <td class="border p-1"><input type="number" value="${row.qty}" onchange="updateCell(${index}, 'qty', parseFloat(this.value)||0)" class="w-full border-none text-right"/></td>
+          <td class="border p-1"><input type="number" value="${row.price}" onchange="updateCell(${index}, 'price', parseFloat(this.value)||0)" class="w-full border-none text-right"/></td>
+          <td class="border p-1 text-right">${(row.qty * row.price).toFixed(2)}</td>
+          <td class="border p-1 text-center">
+            <button onclick="deleteRow(${index})" class="text-red-500 hover:text-red-700">删除</button>
+          </td>`;
+        tableBody.appendChild(tr);
+      });
+      updateTotals();
+    }
+
+    function addRow() {
+      tableData.push({ parent: '', category: '', name: '', qty: 0, price: 0 });
+      renderTable();
+      saveData();
+    }
+
+    function deleteRow(i) {
+      tableData.splice(i, 1);
+      renderTable();
+      saveData();
+    }
+
+    function updateCell(index, key, value) {
+      tableData[index][key] = value;
+      renderTable();
+      saveData();
+    }
+
+    function updateTotals() {
+      const total = tableData.reduce((sum, r) => sum + r.qty * r.price, 0);
+      document.getElementById('totalCost').textContent = '￥' + total.toFixed(2);
+      renderChart();
+      renderMermaid();
+    }
+
+    function renderChart() {
+      const ctx = document.getElementById('costChart').getContext('2d');
+      const grouped = {};
+      tableData.forEach(r => {
+        const key = r.category || '未分类';
+        grouped[key] = (grouped[key] || 0) + r.qty * r.price;
+      });
+      if (window.costChart) window.costChart.destroy();
+      window.costChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(grouped),
+          datasets: [{ data: Object.values(grouped) }]
+        },
+        options: { plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    function renderMermaid() {
+      const rootItems = tableData.filter(r => !r.parent);
+      let diagram = 'graph TD;\n';
+      tableData.forEach(r => {
+        if (r.parent) {
+          diagram += `"${r.parent}" --> "${r.name}\\n￥${(r.qty * r.price).toFixed(2)}";\n`;
+        } else {
+          diagram += `"${r.name}\\n￥${(r.qty * r.price).toFixed(2)}";\n`;
+        }
+      });
+      document.getElementById('mermaidContainer').innerHTML = `<pre class="mermaid">${diagram}</pre>`;
+      mermaid.init(undefined, document.querySelectorAll('.mermaid'));
+    }
+
+    function exportExcel() {
+      const ws = XLSX.utils.json_to_sheet(tableData.map(r => ({
+        上级项目: r.parent,
+        类别: r.category,
+        项目: r.name,
+        数量: r.qty,
+        单价: r.price,
+        小计: r.qty * r.price
+      })));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "BOM成本");
+      XLSX.writeFile(wb, "BOM成本分析.xlsx");
+    }
+
+    document.getElementById('excelFile').addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        const data = new Uint8Array(evt.target.result);
+        const workbook = XLSX.read(data, { type: 'array' });
+        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(firstSheet);
+        tableData = rows.map(r => ({
+          parent: r['上级项目'] || '',
+          category: r['类别'] || '',
+          name: r['项目'] || '',
+          qty: parseFloat(r['数量']) || 0,
+          price: parseFloat(r['单价']) || 0
+        }));
+        renderTable();
+        saveData();
+      };
+      reader.readAsArrayBuffer(file);
+    });
+
+    function saveData() {
+      localStorage.setItem('bomCostData', JSON.stringify(tableData));
+    }
+
+    function clearData() {
+      if (confirm('确定清空所有数据吗？')) {
+        tableData = [];
+        renderTable();
+        saveData();
+      }
+    }
+
+    renderTable();
+  </script>
+</body>
+</html>
