@@ -3,117 +3,206 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>包装报价模板</title>
+<title>报价单</title>
 <script src="https://cdn.tailwindcss.com"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+<style>
+  @media print {
+    .no-print { display: none; }
+  }
+
+  table th, table td {
+    vertical-align: top;
+    text-align: center;
+  }
+
+  /* 表头颜色 */
+  thead th {
+    background-color: #3b82f6; /* 蓝色背景 */
+    color: white;
+    font-weight: bold;
+    border-bottom: 2px solid #1e3a8a;
+  }
+
+  /* 表格隔行颜色 */
+  tbody tr:nth-child(even) {
+    background-color: #f3f4f6;
+  }
+
+  /* 表格边框和阴影 */
+  table {
+    border-collapse: separate;
+    border-spacing: 0;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    border-radius: 0.5rem;
+    overflow: hidden;
+  }
+
+  td, th {
+    border-right: 1px solid #e5e7eb;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  th:last-child, td:last-child {
+    border-right: none;
+  }
+
+  /* 需方信息背景 */
+  .buyer-info {
+    background-color: #dbeafe;
+    padding: 1rem;
+    border-radius: 0.5rem;
+  }
+
+  /* 报价要求背景 */
+  .requirement-box {
+    background-color: #fef3c7;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    flex: 1;
+  }
+
+  /* 标题和logo */
+  .title-container {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+  .title-container img {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+  }
+
+  /* 报价要求整行下划线 */
+  .requirement-line span {
+    display: block;
+    border-bottom: 1px solid #000;
+    margin-bottom: 0.5rem;
+    padding-left: 0.25rem;
+  }
+
+  /* 盖章区 */
+  .stamp-area {
+    width: 150px;
+    height: 80px;
+    border: 2px dashed #000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: #555;
+    margin-left: 1rem;
+    flex-shrink: 0;
+  }
+
+  /* 底部备注 */
+  .footer-note {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.5rem;
+    color: #555;
+    font-size: 0.875rem;
+    margin-top: 1rem;
+  }
+
+</style>
 </head>
-<body class="bg-gray-50 p-4">
-  <h1 class="text-2xl font-bold text-center mb-6">包装报价模板</h1>
+<body class="p-6 bg-gray-50">
 
-  <!-- 公司抬头 -->
-  <div class="grid grid-cols-2 gap-4 mb-6">
-    <div class="bg-white p-4 rounded shadow">
-      <h2 class="font-semibold mb-2">需方信息</h2>
-      <input type="text" placeholder="公司名称" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="联系人" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="电话" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="地址" class="w-full mb-2 border p-1 rounded">
+  <!-- 顶部固定信息 -->
+  <div class="mb-6 border-b pb-4 buyer-info">
+    <div class="title-container mb-4">
+      <img src="assets/img/trtlogo.png" alt="公司Logo">
+      <h1 class="text-2xl font-bold text-blue-800">报价单</h1>
     </div>
-    <div class="bg-white p-4 rounded shadow">
-      <h2 class="font-semibold mb-2">供方信息</h2>
-      <input type="text" placeholder="公司名称" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="联系人" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="电话" class="w-full mb-2 border p-1 rounded">
-      <input type="text" placeholder="地址" class="w-full mb-2 border p-1 rounded">
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <p><strong>需方（固定）:</strong> 北京同仁堂健康药业（青海）有限公司</p>
+        <p><strong>联系人:</strong> 王维</p>
+        <p><strong>联系电话:</strong> 18094719236</p>
+        <p><strong>地址:</strong> 青海省海西州德令哈市同堂路1号</p>
+      </div>
+      <div>
+        <p><strong>供方:</strong> _______________________</p>
+        <p><strong>联系人:</strong> _______________________</p>
+        <p><strong>联系电话:</strong> _______________________</p>
+        <p><strong>地址:</strong> _______________________</p>
+      </div>
     </div>
   </div>
 
-  <!-- 产品表格 -->
-  <div class="overflow-x-auto mb-6">
-    <table class="table-auto border-collapse border border-gray-300 w-full bg-white">
-      <thead>
-        <tr class="bg-gray-100">
-          <th class="border px-2 py-1">产品名</th>
-          <th class="border px-2 py-1">图片URL</th>
-          <th class="border px-2 py-1">规格</th>
-          <th class="border px-2 py-1">工艺</th>
-          <th class="border px-2 py-1">阶梯数量</th>
-          <th class="border px-2 py-1">阶梯单价</th>
-          <th class="border px-2 py-1">操作</th>
-        </tr>
-      </thead>
-      <tbody id="productTable">
-        <!-- 动态添加产品行 -->
-      </tbody>
-    </table>
+  <!-- 报价表格 -->
+  <table id="quote-table" class="min-w-full bg-white mb-6">
+    <thead>
+      <tr>
+        <th class="p-2">序号</th>
+        <th class="p-2">产品名</th>
+        <th class="p-2">规格</th>
+        <th class="p-2">工艺</th>
+        <th class="p-2">阶梯数量</th>
+        <th class="p-2">阶梯单价</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- JS 自动生成行 -->
+    </tbody>
+  </table>
+
+  <!-- 报价要求 + 盖章区 -->
+  <div class="flex items-start mb-6">
+    <div class="requirement-box">
+      <h2 class="font-bold mb-2 text-yellow-800">报价要求</h2>
+      <div class="requirement-line">
+        <span>报价:</span>
+        <span>交期:</span>
+        <span>付款方式:</span>
+        <span>质量保证:</span>
+        <span>运输:</span>
+        <span>包装:</span>
+      </div>
+    </div>
+    <div class="stamp-area">盖章区</div>
   </div>
-  <button class="bg-green-500 text-white px-4 py-2 rounded mb-6" onclick="addRow()">添加产品</button>
 
-  <!-- 报价要求 -->
-  <div class="bg-white p-4 rounded shadow mb-6">
-    <h2 class="font-semibold mb-2">报价要求</h2>
-    <textarea id="notes" rows="5" class="w-full border p-2 rounded" placeholder="如：含税含运，送货地址，发货要求，箱规，要附发货单和厂检报告"></textarea>
+  <!-- 底部备注 -->
+  <div class="footer-note">
+    注：请根据实际情况填写。
   </div>
 
-  <!-- 导出按钮 -->
-  <button class="bg-blue-500 text-white px-4 py-2 rounded" onclick="exportExcel()">导出 Excel</button>
+  <!-- JS 自动生成表格 -->
+  <script>
+    const products = [
+      {
+        name: "示例产品A",
+        spec: "规格1",
+        process: "工艺1",
+        quantities: ["100", "200", "500"],
+        prices: ["¥50", "¥45", "¥40"]
+      },
+      {
+        name: "示例产品B",
+        spec: "规格2",
+        process: "工艺2",
+        quantities: ["50", "100", "200"],
+        prices: ["¥30", "¥28", "¥25"]
+      }
+    ];
 
-<script>
-const tableBody = document.getElementById("productTable");
-
-// 添加一行产品
-function addRow() {
-  const row = document.createElement("tr");
-  row.innerHTML = `
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="产品名"></td>
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="图片URL"></td>
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="规格"></td>
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="工艺"></td>
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="阶梯数量"></td>
-    <td class="border px-2 py-1"><input type="text" class="w-full border p-1 rounded" placeholder="阶梯单价"></td>
-    <td class="border px-2 py-1 text-center"><button class="bg-red-500 text-white px-2 py-1 rounded" onclick="removeRow(this)">删除</button></td>
-  `;
-  tableBody.appendChild(row);
-}
-
-// 删除行
-function removeRow(btn) {
-  btn.closest("tr").remove();
-}
-
-// 导出 Excel
-function exportExcel() {
-  const wb = XLSX.utils.book_new();
-  const ws_data = [];
-
-  // 需方 & 供方信息
-  ws_data.push(["需方公司","需方联系人","需方电话","需方地址","供方公司","供方联系人","供方电话","供方地址"]);
-  const buyerInputs = document.querySelectorAll("div:first-child input");
-  const supplierInputs = document.querySelectorAll("div:nth-child(2) input");
-  ws_data.push([...Array.from(buyerInputs).map(i=>i.value), ...Array.from(supplierInputs).map(i=>i.value)]);
-  ws_data.push([]);
-
-  // 表格标题
-  ws_data.push(["产品名","图片URL","规格","工艺","阶梯数量","阶梯单价"]);
-
-  // 表格数据
-  document.querySelectorAll("#productTable tr").forEach(tr=>{
-    const row = [];
-    tr.querySelectorAll("input").forEach(input=>{
-      row.push(input.value);
+    const tbody = document.querySelector("#quote-table tbody");
+    products.forEach((item, index) => {
+      const tr = document.createElement("tr");
+      tr.className = "text-center";
+      const quantitiesHtml = item.quantities.join("<br>");
+      const pricesHtml = item.prices.join("<br>");
+      tr.innerHTML = `
+        <td class="p-2">${index + 1}</td>
+        <td class="p-2">${item.name}</td>
+        <td class="p-2">${item.spec}</td>
+        <td class="p-2">${item.process}</td>
+        <td class="p-2">${quantitiesHtml}</td>
+        <td class="p-2">${pricesHtml}</td>
+      `;
+      tbody.appendChild(tr);
     });
-    ws_data.push(row);
-  });
-  ws_data.push([]);
+  </script>
 
-  // 报价要求
-  ws_data.push(["报价要求"]);
-  ws_data.push([document.getElementById("notes").value]);
-
-  const ws = XLSX.utils.aoa_to_sheet(ws_data);
-  XLSX.utils.book_append_sheet(wb, ws, "报价单");
-  XLSX.writeFile(wb, "包装报价单.xlsx");
-}
-</script>
 </body>
 </html>
