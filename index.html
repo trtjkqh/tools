@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>工具库 | trtjkqh/tools</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col items-center p-4">
+  <h1 class="text-3xl font-bold mb-6">🛠 trtjkqh/tools 工具库</h1>
+  <p class="mb-8 text-gray-600 text-center max-w-xl">这里汇总了各种实用网页工具，包括采购、成本分析、思维导图、Excel 转 JSON 等，可直接在浏览器使用。</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full max-w-5xl">
+    <!-- Excel 转 JSON -->
+    <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center hover:shadow-lg transition">
+      <div class="text-4xl mb-2">📄➡️🗂</div>
+      <h2 class="font-semibold mb-1">Excel → JSON</h2>
+      <p class="text-gray-500 mb-3 text-sm">将 Excel 表格快速转换为 JSON 格式，便于前端或系统使用。</p>
+      <a href="excel_to_json.html" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded">打开工具</a>
+    </div>
+
+    <!-- 思维导图编辑器 -->
+    <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center hover:shadow-lg transition">
+      <div class="text-4xl mb-2">🧠🗺️</div>
+      <h2 class="font-semibold mb-1">思维导图编辑器</h2>
+      <p class="text-gray-500 mb-3 text-sm">在线绘制思维导图，可添加节点、连接线，导出为图片或 JSON。</p>
+      <a href="mindmap_editor.html" class="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded">打开工具</a>
+    </div>
+
+    <!-- 产品成本表（基础版） -->
+    <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center hover:shadow-lg transition">
+      <div class="text-4xl mb-2">💰📊</div>
+      <h2 class="font-semibold mb-1">产品成本表</h2>
+      <p class="text-gray-500 mb-3 text-sm">填写原料、包装、工序等成本，自动计算总价，可导入/导出 Excel。</p>
+      <a href="cost.html" class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded">打开工具</a>
+    </div>
+
+    <!-- BOM 层级成本分析 -->
+    <div class="bg-white rounded-xl shadow p-4 flex flex-col items-center text-center hover:shadow-lg transition">
+      <div class="text-4xl mb-2">🧩💹</div>
+      <h2 class="font-semibold mb-1">BOM 层级成本分析</h2>
+      <p class="text-gray-500 mb-3 text-sm">支持半成品/原料层级，自动计算各级成本，并可生成层级图和成本饼图。</p>
+      <a href="cost_bom.html" class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded">打开工具</a>
+    </div>
+  </div>
+
+  <footer class="mt-12 text-gray-500 text-sm text-center">© 2025 trtjkqh/tools | 所有工具均为网页本地运行</footer>
+</body>
+</html>
