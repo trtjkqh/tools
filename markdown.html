@@ -1,55 +1,81 @@
-
 <!DOCTYPE html>
 <html lang="zh">
-    <head>
-        <meta charset="utf-8" />
-        <title>Markdown在线编辑器</title>
-		<meta name="description" content="一个在线编辑markdown文档的编辑器,并可实时预览。极简好用的在线编辑，无需下载免费使用。轻量且强大。">
-        <link rel="stylesheet" href="css/style.css"/>
-        <link rel="stylesheet" href="css/editormd.css"/>
-    </head>
-    <body>
-        <div id="layout">
-            <header>
-                <h1>Markdown在线编辑器</h1>
-            </header>
-            <div id="editormd">
-                <textarea style="display:none;"></textarea>
-            </div>
-            <div id="ad_line" style="text-align: center;"></div>
-            <div style="text-align: center;color: #666;margin: 20px auto;">技术支持：<a href="https://pandao.github.io/editor.md/examples/index.html" target="_blank" rel="nofollow">editor.md</a>；Powered by <a href="http://www.fly63.com/" target="_blank">fly63.com</a></div>
+<head>
+    <meta charset="utf-8" />
+    <title>Markdown在线编辑器</title>
+    <meta name="description" content="一个在线编辑markdown文档的编辑器,并可实时预览。极简好用的在线编辑，无需下载免费使用。轻量且强大。">
+
+    <!-- 样式 -->
+    <link rel="stylesheet" href="css/editormd.css"/>
+    <link rel="stylesheet" href="css/style.css"/>
+
+    <style>
+        /* 通用样式 */
+        body {margin:0; font-family:"Microsoft YaHei",sans-serif; background:#f5f5f5; color:#333;}
+        .container {max-width:1200px; margin:0 auto; padding:20px; display:flex; flex-direction:column; min-height:100vh;}
+        header{text-align:center; margin-bottom:30px;}
+        header h1{font-size:2rem; margin-bottom:10px;}
+        header p.subtitle{font-size:1rem; color:#666;}
+        .tool-card{background:#fff; padding:20px; border-radius:12px; box-shadow:0 4px 12px rgba(0,0,0,0.08); margin-bottom:30px;}
+        #editormd{width:100%; min-height:500px; margin-top:10px;}
+        /* 输出和按钮区域 */
+        .actions{margin-top:20px; text-align:right;}
+        .btn{padding:8px 15px; border:none; border-radius:6px; cursor:pointer; transition:background .2s; font-size:0.9rem;}
+        .btn-primary{background:#007bff; color:#fff;}
+        .btn-primary:hover{background:#0069d9;}
+        .btn-secondary{background:#28a745; color:#fff;}
+        .btn-secondary:hover{background:#218838;}
+        /* 页脚 */
+        footer{text-align:center; font-size:0.8rem; color:#888; margin-top:auto; padding:15px 0;}
+        /* 响应式 */
+        @media(max-width:900px){.container{padding:10px;}}
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Markdown在线编辑器</h1>
+        <p class="subtitle">极简好用的在线Markdown编辑器，支持实时预览和导出</p>
+    </header>
+
+    <div class="tool-card">
+        <h2>📝 编辑区</h2>
+        <div id="editormd">
+            <textarea style="display:none;"></textarea>
         </div>
-    </body>
-</html>
+    </div>
+
+    <footer>© 2025 Markdown在线编辑器 | 数据在浏览器本地处理，不会上传服务器</footer>
+</div>
+
+<!-- JS -->
 <script src="js/jquery.min.js"></script>
 <script src="js/editormd.min.js"></script>
-<script src="/add_page.js"></script>
-<script type="text/javascript">
-	var testEditor;
-    $(function() {
-        testEditor = editormd("editormd", {
-            width   : "90%",
-            height  : 640,
-            syncScrolling : "single",
-            path    : "lib/",
-            toolbarIcons : function() {
-	            return ["undo","redo","|","bold","del","italic","quote","ucwords","uppercase","lowercase","|","h1","h2","h3","h4","h5","h6","|","list-ul","list-ol","hr","|","link","reference-link","image","code","preformatted-text","code-block","table","datetime","html-entities","pagebreak","|","goto-line","watch","preview","fullscreen","clear","search","|","help"]
-	        },
-	        //theme: "dark",//工具栏主题
-		    //previewTheme: "dark",//预览主题
-		    //editorTheme: "pastel-on-dark",//编辑主题
-		    saveHTMLToTextarea: true,
-		    emoji: false,
-		    taskList: true, 
-		    tocm: true,         // Using [TOCM]
-		    tex: true,                   // 开启科学公式TeX语言支持，默认关闭
-		    flowChart: true,             // 开启流程图支持，默认关闭
-		    sequenceDiagram: true,       // 开启时序/序列图支持，默认关闭,
-        });
+<script src="add_page.js"></script>
+
+<script>
+var testEditor;
+$(function() {
+    testEditor = editormd("editormd", {
+        width   : "100%",
+        height  : 640,
+        syncScrolling : "single",
+        path    : "lib/",      // Editor.md lib 文件夹路径
+        toolbarIcons : function() {
+            return ["undo","redo","|","bold","del","italic","quote","ucwords","uppercase","lowercase",
+                    "|","h1","h2","h3","h4","h5","h6","|","list-ul","list-ol","hr","|",
+                    "link","reference-link","image","code","preformatted-text","code-block","table",
+                    "datetime","html-entities","pagebreak","|","goto-line","watch","preview","fullscreen","clear","search","|","help"];
+        },
+        saveHTMLToTextarea: true,
+        emoji: false,
+        taskList: true, 
+        tocm: true,
+        tex: true,
+        flowChart: true,
+        sequenceDiagram: true,
     });
-    /*var toolbarModes={
-	    full:["undo","redo","|","bold","del","italic","quote","ucwords","uppercase","lowercase","|","h1","h2","h3","h4","h5","h6","|","list-ul","list-ol","hr","|","link","reference-link","image","code","preformatted-text","code-block","table","datetime","emoji","html-entities","pagebreak","|","goto-line","watch","preview","fullscreen","clear","search","|","help","info"],
-	    simple:["undo","redo","|","bold","del","italic","quote","uppercase","lowercase","|","h1","h2","h3","h4","h5","h6","|","list-ul","list-ol","hr","|","watch","preview","fullscreen","|","help","info"],
-	    mini:["undo","redo","|","watch","preview","|","help","info"]
-	}*/
+});
 </script>
+</body>
+</html>
