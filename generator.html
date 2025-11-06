@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chirpy v7.4 Front Matter 生成器</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-2xl p-8">
+    <h1 class="text-2xl font-bold mb-6 text-center">🪄 Chirpy v7.4 Front Matter 生成器</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- 左侧输入区 -->
+      <div class="space-y-4">
+        <label class="block font-semibold">标题：</label>
+        <input id="title" type="text" class="w-full p-2 border rounded" placeholder="输入文章标题" />
+
+        <label class="block font-semibold">正文内容：</label>
+        <textarea id="content" class="w-full p-2 border rounded h-48" placeholder="输入文章正文内容（支持 Markdown）"></textarea>
+
+        <label class="block font-semibold">分类（可多选）：</label>
+        <select id="category" class="w-full p-2 border rounded" multiple>
+          <option>职场</option>
+          <option>生活</option>
+          <option>情感</option>
+          <option>爱好</option>
+          <option>感悟</option>
+          <option>探索</option>
+          <option>学习</option>
+          <option>读书</option>
+          <option>影视</option>
+          <option value="custom">自定义分类</option>
+        </select>
+        <input id="customCategory" type="text" class="w-full p-2 border rounded hidden" placeholder="输入自定义分类" />
+
+        <label class="block font-semibold">标签：</label>
+        <div class="flex gap-2">
+          <input id="tag1" type="text" class="w-1/2 p-2 border rounded" placeholder="标签1" />
+          <input id="tag2" type="text" class="w-1/2 p-2 border rounded" placeholder="标签2" />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input id="hasImage" type="checkbox" class="w-4 h-4" />
+          <label for="hasImage" class="font-semibold">添加封面图片</label>
+        </div>
+        <input id="imageName" type="text" class="w-full p-2 border rounded hidden" placeholder="输入图片文件名，例如 cover.jpg" />
+
+        <div class="flex items-center gap-2">
+          <input id="pin" type="checkbox" class="w-4 h-4" />
+          <label for="pin" class="font-semibold">置顶文章</label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input id="math" type="checkbox" class="w-4 h-4" />
+          <label for="math" class="font-semibold">启用数学公式（KaTeX）</label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input id="mermaid" type="checkbox" class="w-4 h-4" />
+          <label for="mermaid" class="font-semibold">启用 Mermaid 图表</label>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <input id="comments" type="checkbox" class="w-4 h-4" checked />
+          <label for="comments" class="font-semibold">启用评论</label>
+        </div>
+
+        <button id="generate" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg w-full">生成 Markdown</button>
+      </div>
+
+      <!-- 右侧输出区 -->
+      <div class="space-y-4">
+        <label class="block font-semibold">生成的 posts 文件名：</label>
+        <div class="flex">
+          <input id="filename" readonly class="w-full p-2 border rounded-l" />
+          <button id="copyFilename" class="bg-gray-600 text-white px-3 rounded-r">复制</button>
+        </div>
+
+        <label class="block font-semibold">生成的 Markdown 内容：</label>
+        <textarea id="output" readonly class="w-full p-2 border rounded h-80"></textarea>
+
+        <div class="flex gap-2">
+          <button id="copyOutput" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">复制 Markdown</button>
+          <button id="download" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 rounded-lg">下载 .md 文件</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+const categorySelect = document.getElementById('category');
+const customCategoryInput = document.getElementById('customCategory');
+const hasImageCheckbox = document.getElementById('hasImage');
+const imageNameInput = document.getElementById('imageName');
+
+categorySelect.addEventListener('change', ()=>{
+  const selectedOptions = Array.from(categorySelect.selectedOptions).map(o=>o.value);
+  if(selectedOptions.includes('custom')){
+    customCategoryInput.classList.remove('hidden');
+  } else {
+    customCategoryInput.classList.add('hidden');
+    customCategoryInput.value = '';
+  }
+});
+
+hasImageCheckbox.addEventListener('change', ()=>{
+  if(hasImageCheckbox.checked){
+    imageNameInput.classList.remove('hidden');
+  } else {
+    imageNameInput.classList.add('hidden');
+    imageNameInput.value = '';
+  }
+});
+
+function nowFormatted(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  const YYYY = d.getFullYear();
+  const MM = pad(d.getMonth()+1);
+  const DD = pad(d.getDate());
+  const hh = pad(d.getHours());
+  const mm = pad(d.getMinutes());
+  const ss = pad(d.getSeconds());
+  return `${YYYY}-${MM}-${DD} ${hh}:${mm}:${ss} +0800`;
+}
+
+function slugify(text){
+  if(!text) return 'post';
+  let s = String(text).trim().toLowerCase();
+  s = s.replace(/\s+/g,'-').replace(/[^\w\-]/g,'-').replace(/\-+/g,'-').replace(/^-+|-+$/g,'');
+  return s || 'post';
+}
+
+document.getElementById('generate').addEventListener('click', ()=>{
+  const title = document.getElementById('title').value.trim();
+  if(!title){ alert('请填写标题'); return; }
+  const content = document.getElementById('content').value.trim();
+  let categories = Array.from(categorySelect.selectedOptions).map(o=>o.value).filter(v=>v!=='custom');
+  if(categorySelect.value.includes('custom') && customCategoryInput.value.trim()){
+    categories.push(customCategoryInput.value.trim());
+  }
+
+  const tag1 = document.getElementById('tag1').value.trim();
+  const tag2 = document.getElementById('tag2').value.trim();
+  let tags = [];
+  if(tag1) tags.push(tag1);
+  if(tag2) tags.push(tag2);
+
+  const dateStr = nowFormatted();
+  const slug = slugify(title);
+  const fileDate = new Date().toISOString().slice(0,10);
+  const filename = `_posts/${fileDate}-${slug}.md`;
+
+  let fm = '---\n';
+  fm += `layout: post\n`;
+  fm += `title: "${title}"\n`;
+  fm += `date: ${dateStr}\n`;
+  fm += `last_modified_at: ${dateStr}\n`;
+  if(categories.length) fm += `categories: [${categories.join(', ')}]\n`;
+  if(tags.length) fm += `tags: [${tags.join(', ')}]\n`;
+  if(hasImageCheckbox.checked && imageNameInput.value.trim()){
+    fm += `image:\n  path: /assets/img/${imageNameInput.value.trim()}\n`;
+  }
+  fm += `pin: ${document.getElementById('pin').checked}\n`;
+  fm += `math: ${document.getElementById('math').checked}\n`;
+  fm += `mermaid: ${document.getElementById('mermaid').checked}\n`;
+  fm += `comments: ${document.getElementById('comments').checked}\n`;
+  fm += '---\n\n';
+
+  let body = '';
+  if(hasImageCheckbox.checked && imageNameInput.value.trim()){
+    body += `![](/assets/img/${imageNameInput.value.trim()})\n\n`;
+  }
+  body += content || '_此处填写正文_\n';
+
+  document.getElementById('filename').value = filename;
+  document.getElementById('output').value = fm + body;
+});
+
+document.getElementById('copyOutput').addEventListener('click', ()=>{
+  const output = document.getElementById('output');
+  output.select();
+  document.execCommand('copy');
+});
+
+document.getElementById('copyFilename').addEventListener('click', ()=>{
+  const filename = document.getElementById('filename');
+  filename.select();
+  document.execCommand('copy');
+});
+
+document.getElementById('download').addEventListener('click', ()=>{
+  const text = document.getElementById('output').value;
+  if(!text){ alert('请先生成 Markdown'); return; }
+  const title = document.getElementById('title').value.trim() || 'untitled';
+  const blob = new Blob([text], {type:'text/markdown'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  const now = new Date().toISOString().slice(0,10);
+  link.download = `${now}-${slugify(title)}.md`;
+  link.click();
+});
+</script>
+</body>
+</html>
