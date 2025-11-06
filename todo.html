@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日待办</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+<style>
+body { background:#fff7ed; color:#431407; transition:all 0.3s; }
+header, section { margin:10px auto; max-width:1200px; }
+.save-indicator { position:fixed; bottom:20px; right:20px; background:#10b981; color:white; padding:8px 16px; border-radius:4px; font-size:0.875rem; box-shadow:0 2px 4px rgba(0,0,0,0.1); opacity:0; transition:opacity 0.3s; z-index:1000; }
+.save-indicator.show { opacity:1; }
+.fade-in { animation: fadeIn 0.3s ease-out; }
+@keyframes fadeIn { from {opacity:0; transform:translateY(10px);} to {opacity:1; transform:translateY(0);} }
+
+/* 可拖拽列宽 */
+th.resizable { position: relative; }
+th.resizable div { overflow: hidden; }
+th.resizable span { position: absolute; right: 0; top: 0; bottom: 0; width: 5px; cursor: col-resize; user-select: none; }
+
+/* 按钮组自适应显示 */
+.button-group { display:flex; flex-wrap:wrap; gap:5px; }
+.button-group button { white-space:nowrap; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<header class="bg-white rounded-xl shadow-md p-4 flex justify-between items-center relative">
+  <div class="button-group">
+<button class="bg-orange-500 text-white px-4 py-2 rounded hover:bg-orange-600" onclick="addRow()">新增事项</button>
+<button class="bg-indigo-500 text-white px-4 py-2 rounded hover:bg-indigo-600" onclick="exportToExcel()">导出Excel</button>
+    <button class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600" onclick="manualSave()"> 保存数据</button>
+  </div>
+  <div>📅 <script>document.write(new Date().toLocaleDateString());</script></div>
+</header>
+
+<section id="unified-section" class="bg-white rounded-xl shadow-md p-4 fade-in"></section>
+
+<div id="saveIndicator" class="save-indicator">数据已保存</div>
+
+<script>
+const types=['合同','在途','打样'];
+const columns=['类型','优先级','物料名','供应商名','进展','备注','开始日','结束日'];
+let unifiedData=JSON.parse(localStorage.getItem('unifiedData')||'[]');
+let colWidths=JSON.parse(localStorage.getItem('colWidths')||'{}');
+
+function autoSave(){ localStorage.setItem('unifiedData',JSON.stringify(unifiedData)); showSaveIndicator(); }
+function manualSave(){ localStorage.setItem('unifiedData',JSON.stringify(unifiedData)); showSaveIndicator(); }
+function showSaveIndicator(){ const ind=document.getElementById('saveIndicator'); ind.classList.add('show'); setTimeout(()=>ind.classList.remove('show'),1500); }
+
+function addRow(){ const newRow={}; columns.forEach(col=>{ if(col==='类型') newRow[col]='合同'; else if(col==='优先级') newRow[col]='中'; else newRow[col]=''; }); unifiedData.push(newRow); renderTable(); autoSave(); }
+function deleteRow(i){ unifiedData.splice(i,1); renderTable(); autoSave(); }
+function exportToExcel(){ let csv="data:text/csv;charset=utf-8,\uFEFF"; csv+=columns.join(',')+'\n'; unifiedData.forEach(r=>{ csv+=columns.map(c=>`"${r[c]||''}"`).join(',')+'\n'; }); const link=document.createElement("a"); link.setAttribute("href",encodeURI(csv)); link.setAttribute("download",`每日待办_${new Date().toLocaleDateString()}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); }
+function clearAllData(){ if(confirm('确定清空所有数据？')){ unifiedData=[]; renderTable(); autoSave(); } }
+
+// 获取类型对应背景色
+function typeBgColor(type){
+  if(type==='合同') return '#d0ebff'; // 浅蓝
+  if(type==='在途') return '#fff9d6'; // 浅黄
+  if(type==='打样') return '#ffd6d6'; // 浅红
+  return '#ffffff';
+}
+
+// 渲染表格
+function renderTable(){
+  const container=document.getElementById('unified-section');
+  container.innerHTML=`<div class="overflow-x-auto"><table class="min-w-full border text-sm" id="unified-table"><thead><tr><th class="border px-2 py-1" style="width:40px;">序号</th>${columns.map(c=>`<th class="border px-2 py-1 resizable" style="width:${colWidths[c]||150}px"><div>${c}</div><span></span></th>`).join('')}<th class="border px-2 py-1">操作</th></tr></thead><tbody id="unified-table-body"></tbody></table></div>`;
+  const tbody=document.getElementById('unified-table-body');
+  unifiedData.forEach((row,i)=>{
+    const bg=typeBgColor(row['类型']);
+    const tr=document.createElement('tr');
+    tr.style.backgroundColor=bg;
+    tr.innerHTML=`<td class="border px-2 py-1 text-center">${i+1}</td>`+columns.map(col=>{
+      if(col==='类型') return `<td class="border px-2 py-1"><select onchange="rowTypeChange(${i},this.value)" style="width:100%">${types.map(t=>`<option value="${t}" ${row[col]===t?'selected':''}>${t}</option>`)}</select></td>`;
+      if(col==='优先级') return `<td class="border px-2 py-1"><select onchange="rowPriorityChange(${i},this.value)"><option value="高" ${row[col]==='高'?'selected':''}>高</option><option value="中" ${row[col]==='中'?'selected':''}>中</option><option value="低" ${row[col]==='低'?'selected':''}>低</option></select></td>`;
+      return `<td class="border px-2 py-1" contenteditable="true" oninput="rowEdit(${i},'${col}',this.innerText)">${row[col]||''}</td>`;
+    }).join('')+`<td class="border px-2 py-1 text-center">
+  <button onclick="deleteRow(${i})" class="p-1">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-blue-500 hover:text-blue-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+    </svg>
+  </button>
+</td>
+`;
+    tbody.appendChild(tr);
+  });
+  makeResizable();
+  Sortable.create(tbody,{animation:150,onEnd:e=>{const newData=[]; Array.from(tbody.children).forEach(tr=>{ newData.push(unifiedData[parseInt(tr.children[0].innerText)-1]); }); unifiedData=newData; renderTable(); autoSave(); }});
+}
+
+// 行编辑
+function rowEdit(i,col,val){ unifiedData[i][col]=val; autoSave(); }
+function rowTypeChange(i,val){ unifiedData[i]['类型']=val; renderTable(); autoSave(); }
+function rowPriorityChange(i,val){ unifiedData[i]['优先级']=val; autoSave(); }
+
+// 可拖拽列宽 + 记忆
+function makeResizable(){
+  const table=document.getElementById('unified-table');
+  const cols=table.querySelectorAll('th.resizable');
+  cols.forEach(th=>{
+    const span=th.querySelector('span');
+    const colName=th.innerText.trim();
+    span.onmousedown=e=>{
+      let startX=e.pageX,startWidth=th.offsetWidth;
+      document.onmousemove=em=>{
+        const newWidth=startWidth+(em.pageX-startX);
+        if(newWidth>30) th.style.width=newWidth+'px';
+      }
+      document.onmouseup=()=>{
+        document.onmousemove=null; document.onmouseup=null;
+        colWidths[colName]=th.offsetWidth;
+        localStorage.setItem('colWidths',JSON.stringify(colWidths));
+      }
+    }
+  });
+}
+
+// 初始化
+renderTable();
+</script>
+
+</body>
+</html>
